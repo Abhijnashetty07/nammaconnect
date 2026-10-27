@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import "./App.css";
 
@@ -66,6 +65,15 @@ const missionRetry = {
   communication: 8,
   shopping: 4,
 };
+const missionHelpData = {
+  2: { simple: { kannada: "ಇಲ್ಲಿ ನಿಲ್ಲಿಸಿ, ದಯವಿಟ್ಟು", latin: "Illi nillisi, dayavittu", meaning: "Please stop here." }, words: [["ಇಲ್ಲಿ", "illi", "here"], ["ನಿಲ್ಲಿಸಿ", "nillisi", "stop"], ["ದಯವಿಟ್ಟು", "dayavittu", "please"]], hint: "Point to the place and say: ಇಲ್ಲಿ ನಿಲ್ಲಿಸಿ." },
+  3: { simple: { kannada: "ಬಸ್ ಸ್ಟಾಪ್ ಎಲ್ಲಿದೆ?", latin: "Bus stop ellide?", meaning: "Where is the bus stop?" }, words: [["ಬಸ್", "bus", "bus"], ["ಸ್ಟಾಪ್", "stop", "stop"], ["ಎಲ್ಲಿದೆ", "ellide", "where is it"]], hint: "You can also ask: ಬಸ್ ಸ್ಟಾಪ್?" },
+  4: { simple: { kannada: "ಇದು ಎಷ್ಟು?", latin: "Idu eshtu?", meaning: "How much is this?" }, words: [["ಇದು", "idu", "this"], ["ಎಷ್ಟು", "eshtu", "how much"]], hint: "Point at the item and ask: ಇದು ಎಷ್ಟು?" },
+  5: { simple: { kannada: "ನೀರು ಕೊಡಿ", latin: "Neeru kodi", meaning: "Please give water." }, words: [["ನೀರು", "neeru", "water"], ["ಕೊಡಿ", "kodi", "please give"]], hint: "Say: ನೀರು ಕೊಡಿ." },
+  8: { simple: { kannada: "ನನಗೆ ಅರ್ಥ ಆಗಲ್ಲ", latin: "Nanage artha agalla", meaning: "I do not understand." }, words: [["ನನಗೆ", "nanage", "to me"], ["ಅರ್ಥ", "artha", "meaning"], ["ಆಗಲ್ಲ", "agalla", "does not happen / understand"]], hint: "Ask them to speak slowly: ನಿಧಾನವಾಗಿ ಹೇಳಿ." },
+  9: { simple: { kannada: "ಸಹಾಯ ಮಾಡಿ", latin: "Sahaya maadi", meaning: "Please help." }, words: [["ಸಹಾಯ", "sahaya", "help"], ["ಮಾಡಿ", "maadi", "please do"]], hint: "Point or gesture, then say: ಸಹಾಯ ಮಾಡಿ." },
+  10: { simple: { kannada: "ಹಾಸ್ಪಿಟಲ್ ಎಲ್ಲಿದೆ?", latin: "Hospital ellide?", meaning: "Where is the hospital?" }, words: [["ಹಾಸ್ಪಿಟಲ್", "hospital", "hospital"], ["ಎಲ್ಲಿದೆ", "ellide", "where is it"]], hint: "You can simply ask: ಹಾಸ್ಪಿಟಲ್?" },
+};
 const phrases = [
   { id: 1, category: "travel", kannada: "ನಮಸ್ಕಾರ", latin: "Namaskara", meaning: "Hello / Greetings", context: "A polite way to greet someone", level: "Beginner" },
   { id: 2, category: "travel", kannada: "ಇಲ್ಲಿ ನಿಲ್ಲಿಸಿ", latin: "Illi nillisi", meaning: "Please stop here", context: "When travelling by auto or taxi", level: "Beginner" },
@@ -79,6 +87,33 @@ const phrases = [
   { id: 10, category: "health", kannada: "ಆಸ್ಪತ್ರೆ ಎಲ್ಲಿದೆ?", latin: "Aspatre ellide?", meaning: "Where is the hospital?", context: "When looking for a hospital", level: "Beginner" },
 ];
 
+const aiScenarios = [
+  { id: "restaurant", icon: "🍽️", title: "Restaurant", subtitle: "Order food and ask for help" },
+  { id: "bus", icon: "🚌", title: "Bus", subtitle: "Tickets, stops and directions" },
+  { id: "shop", icon: "🛍️", title: "Shop", subtitle: "Prices and buying things" },
+  { id: "hospital", icon: "🏥", title: "Hospital", subtitle: "Simple health conversations" },
+  { id: "office", icon: "💼", title: "Office", subtitle: "Friendly workplace talk" },
+];
+
+const fallbackReplies = {
+  restaurant: { kannada: "ನಮಸ್ಕಾರ! ಏನು ಬೇಕು?", transliteration: "Namaskara! Enu beku?", english: "Hello! What would you like?", suggestions: [{ kannada: "ನನಗೆ ನೀರು ಬೇಕು", transliteration: "Nanage neeru beku", english: "I would like water." }, { kannada: "ಮೆನು ಕೊಡಿ", transliteration: "Menu kodi", english: "Please give me the menu." }, { kannada: "ಇದು ಎಷ್ಟು?", transliteration: "Idu eshtu?", english: "How much is this?" }] },
+  bus: { kannada: "ಎಲ್ಲಿಗೆ ಹೋಗಬೇಕು?", transliteration: "Ellige hogabeku?", english: "Where do you need to go?", suggestions: [{ kannada: "ಬಸ್ ನಿಲ್ದಾಣ ಎಲ್ಲಿದೆ?", transliteration: "Bus nildana ellide?", english: "Where is the bus stop?" }, { kannada: "ಇಲ್ಲಿ ನಿಲ್ಲಿಸಿ", transliteration: "Illi nillisi", english: "Please stop here." }, { kannada: "ಟಿಕೆಟ್ ಎಷ್ಟು?", transliteration: "Ticket eshtu?", english: "How much is the ticket?" }] },
+  shop: { kannada: "ನಮಸ್ಕಾರ, ಏನು ಬೇಕು?", transliteration: "Namaskara, enu beku?", english: "Hello, what do you need?", suggestions: [{ kannada: "ಇದರ ಬೆಲೆ ಎಷ್ಟು?", transliteration: "Idara bele eshtu?", english: "How much does this cost?" }, { kannada: "ನನಗೆ ಇದು ಬೇಕು", transliteration: "Nanage idu beku", english: "I want this." }, { kannada: "ಚಿಲ್ಲರೆ ಇದೆಯಾ?", transliteration: "Chillare ideya?", english: "Do you have change?" }] },
+  hospital: { kannada: "ಏನಾಯಿತು?", transliteration: "Enayitu?", english: "What happened?", suggestions: [{ kannada: "ನನಗೆ ಸಹಾಯ ಬೇಕು", transliteration: "Nanage sahaya beku", english: "I need help." }, { kannada: "ಡಾಕ್ಟರ್ ಎಲ್ಲಿದ್ದಾರೆ?", transliteration: "Doctor elliddare?", english: "Where is the doctor?" }, { kannada: "ನನಗೆ ನೋವಾಗುತ್ತಿದೆ", transliteration: "Nanage novaguttide", english: "I am in pain." }] },
+  office: { kannada: "ನಮಸ್ಕಾರ! ಹೇಗಿದ್ದೀರಾ?", transliteration: "Namaskara! Hegiddira?", english: "Hello! How are you?", suggestions: [{ kannada: "ನಾನು ಚೆನ್ನಾಗಿದ್ದೇನೆ", transliteration: "Naanu chennagiddene", english: "I am well." }, { kannada: "ನನಗೆ ಸ್ವಲ್ಪ ಸಹಾಯ ಬೇಕು", transliteration: "Nanage swalpa sahaya beku", english: "I need a little help." }, { kannada: "ಮೀಟಿಂಗ್ ಯಾವಾಗ?", transliteration: "Meeting yavaga?", english: "When is the meeting?" }] },
+};
+
+const fallbackFollowUp = {
+  kannada: "ಕ್ಷಮಿಸಿ, ನಿಧಾನವಾಗಿ ಹೇಳಿ.",
+  transliteration: "Kshamisi, nidhanavagi heli.",
+  english: "Sorry, please say it slowly.",
+  suggestions: [
+    { kannada: "ನನಗೆ ಅರ್ಥ ಆಗಲ್ಲ", transliteration: "Nanage artha agalla", english: "I do not understand." },
+    { kannada: "ಮತ್ತೆ ಹೇಳಿ", transliteration: "Matte heli", english: "Please say it again." },
+    { kannada: "ಸ್ವಲ್ಪ ಸಹಾಯ ಮಾಡಿ", transliteration: "Swalpa sahaya maadi", english: "Please help me a little." },
+  ],
+};
+
 
 function App() {
   const [practiceIndex, setPracticeIndex] = useState(0);
@@ -87,6 +122,15 @@ function App() {
   const [search, setSearch] = useState("");
   const [saved, setSaved] = useState([]);
   const [page, setPage] = useState("home");
+  const [aiScenario, setAiScenario] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState("");
+  const [missionHelpAttempt, setMissionHelpAttempt] = useState(0);
+  const [missionHelpLoading, setMissionHelpLoading] = useState(false);
+  const [missionAiRephrase, setMissionAiRephrase] = useState(null);
+  const [missionHelpInput, setMissionHelpInput] = useState("");
   
   const [revealed, setRevealed] = useState(false);
   const [learned, setLearned] = useState([]);
@@ -148,6 +192,140 @@ function speak(text) {
     setPage("practice");
   }
 
+  function getFallbackReply(scenario, messages) {
+    const lastTutorReply = [...messages].reverse().find((message) => message.role === "assistant");
+    return lastTutorReply?.kannada === fallbackReplies[scenario].kannada ? fallbackFollowUp : fallbackReplies[scenario];
+  }
+
+  function startAiPractice() {
+    setAiScenario(null);
+    setChatMessages([]);
+    setChatInput("");
+    setChatError("");
+    setPage("ai-practice");
+  }
+
+  async function chooseAiScenario(scenario) {
+    setAiScenario(scenario);
+    const starter = { role: "user", content: "Start a short beginner conversation for this scenario.", hidden: true };
+    setChatMessages([starter]);
+    setChatError("");
+    setChatLoading(true);
+    try {
+      const reply = await requestTutorReply(scenario, [starter]);
+      setChatMessages([starter, { role: "assistant", source: "ai", ...reply }]);
+    } catch {
+      setChatError("AI is unavailable right now, so we started with a practice reply.");
+      setChatMessages([starter, { role: "assistant", source: "fallback", ...getFallbackReply(scenario, [starter]) }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  async function requestTutorReply(scenario, messages, mode) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          scenario,
+          mode,
+          messages: messages.map((item) => ({
+            role: item.role,
+            content: item.role === "assistant"
+              ? `Kannada: ${item.kannada}\nTransliteration: ${item.transliteration}\nEnglish: ${item.english}`
+              : item.content,
+          })),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.kannada || !Array.isArray(data.suggestions)) throw new Error(data.error || "The tutor could not reply right now.");
+      return data;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }
+
+  async function sendChatMessage(message) {
+    const content = message.trim();
+    if (!content || !aiScenario || chatLoading) return;
+    const userMessage = { role: "user", content };
+    const nextMessages = [...chatMessages, userMessage];
+    setChatMessages(nextMessages);
+    setChatInput("");
+    setChatError("");
+    setChatLoading(true);
+    try {
+      const data = await requestTutorReply(aiScenario, nextMessages);
+      setChatMessages((current) => [...current, { role: "assistant", source: "ai", ...data }]);
+    } catch {
+      setChatError("AI is unavailable right now, so we switched to a practice reply.");
+      setChatMessages((current) => [...current, { role: "assistant", source: "fallback", ...getFallbackReply(aiScenario, current) }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  function resetMissionHelp() {
+    setMissionHelpAttempt(0);
+    setMissionAiRephrase(null);
+    setMissionHelpInput("");
+  }
+
+  async function advanceMissionHelp() {
+    const phrase = phrases[practiceIndex];
+    const prepared = missionHelpData[phrase.id];
+    if (!prepared || missionHelpLoading) return;
+
+    setMissionHelpInput("");
+    if (missionHelpAttempt === 0) {
+      setMissionHelpLoading(true);
+      try {
+        const scenarioByMission = { travel: "bus", health: "hospital", food: "restaurant", help: "hospital", communication: "office", shopping: "shop" };
+        const reply = await requestTutorReply(scenarioByMission[activeCategory] || "office", [{
+          role: "user",
+          content: `Simplify this Kannada line for a beginner without changing its meaning: Kannada: ${phrase.kannada}; transliteration: ${phrase.latin}; English: ${phrase.meaning}.`,
+        }], "mission-rephrase");
+        setMissionAiRephrase({ kannada: reply.kannada, latin: reply.transliteration, meaning: reply.english, source: "ai" });
+      } catch {
+        setMissionAiRephrase({ ...prepared.simple, source: "fallback" });
+      } finally {
+        setMissionHelpLoading(false);
+        setMissionHelpAttempt(1);
+      }
+      return;
+    }
+    setMissionHelpAttempt((attempt) => Math.min(attempt + 1, 3));
+  }
+  
+function showNextMissionPhrase() {
+  const options = missionQuestions[activeCategory]?.options || [];
+  const currentPhraseId = phrases[practiceIndex]?.id;
+
+  const currentOptionIndex = options.findIndex(
+    (option) => option.phraseId === currentPhraseId
+  );
+
+  if (options.length === 0) return;
+
+  const nextOption =
+    options[(currentOptionIndex + 1) % options.length];
+
+  const nextIndex = phrases.findIndex(
+    (phrase) => phrase.id === nextOption.phraseId
+  );
+
+  if (nextIndex !== -1) {
+    setPracticeIndex(nextIndex);
+  }
+
+  resetMissionHelp();
+}
+
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -167,6 +345,7 @@ function speak(text) {
         </button>
         <button className={`nav-item ${page === "practice" ? "active" : ""}`}
           onClick={startPractice}>◎ <span>Practice with me</span></button>
+        
         <button className={`nav-item ${page === "saved" ? "active" : ""}`}
           onClick={() => { setPage("saved"); setSearch(""); }}>
           ♡ <span>Saved phrases</span>
@@ -218,6 +397,7 @@ function speak(text) {
   >
     Practise Kannada →
   </button>
+  
   <button
   className="primary-btn"
   onClick={() => setPage("mission")}
@@ -420,6 +600,7 @@ function speak(text) {
             setPracticeIndex(
               phrases.findIndex((phrase) => phrase.id === option.phraseId)
             );
+            resetMissionHelp();
             setPage("mission-message");
           }}
         >
@@ -461,10 +642,49 @@ function speak(text) {
 
       <button
         className="primary-btn"
-        onClick={() => setPage("mission-followup")}
+        onClick={() => { resetMissionHelp(); setPage("mission-followup"); }}
       >
         Continue →
       </button>
+    </div>
+
+    <div className="mission-help">
+      <p className="eyebrow">NEED A LITTLE MORE HELP?</p>
+      {missionHelpAttempt === 0 && <p className="mission-help-copy">Ask for a simpler explanation whenever a line feels unclear.</p>}
+      {missionHelpLoading && <p className="mission-help-copy">Making that line simpler…</p>}
+      {missionHelpAttempt === 1 && (
+        <div className="mission-help-card">
+          <span className="mission-help-step">SIMPLER WAY TO SAY IT</span>
+          <h3>{missionAiRephrase?.kannada || missionHelpData[phrases[practiceIndex]?.id]?.simple.kannada}</h3>
+          <p className="transliteration">{missionAiRephrase?.latin || missionHelpData[phrases[practiceIndex]?.id]?.simple.latin}</p>
+          <p>{missionAiRephrase?.meaning || missionHelpData[phrases[practiceIndex]?.id]?.simple.meaning}</p>
+          {import.meta.env.DEV && <span className="reply-source">{missionAiRephrase?.source === "ai" ? "AI" : "Fallback"}</span>}
+        </div>
+      )}
+      {missionHelpAttempt === 2 && (
+        <div className="mission-help-card">
+          <span className="mission-help-step">WORD BY WORD</span>
+          <div className="word-breakdown">
+            {missionHelpData[phrases[practiceIndex]?.id]?.words.map(([kannada, latin, meaning]) => <div key={kannada}><strong>{kannada}</strong><span>{latin}</span><small>{meaning}</small></div>)}
+          </div>
+          <button className="listen-btn" onClick={() => speak(phrases[practiceIndex]?.kannada)}>🔊 Play Kannada again</button>
+        </div>
+      )}
+      {missionHelpAttempt === 3 && (
+        <div className="mission-help-card">
+          <span className="mission-help-step">FULL MEANING</span>
+          <p><strong>{phrases[practiceIndex]?.meaning}</strong></p>
+          <p>{missionHelpData[phrases[practiceIndex]?.id]?.hint}</p>
+          <button className="secondary-btn" onClick={() => setMissionHelpAttempt(1)}>Try an easier version</button>
+        </div>
+      )}
+      <button className="secondary-btn" onClick={advanceMissionHelp} disabled={missionHelpLoading || missionHelpAttempt >= 3}>
+        {missionHelpAttempt === 0 ? "I didn't understand" : missionHelpAttempt === 1 ? "Show word by word" : "Show full meaning"}
+      </button>
+      <form className="mission-help-form" onSubmit={(event) => { event.preventDefault(); advanceMissionHelp(); }}>
+        <input value={missionHelpInput} onChange={(event) => setMissionHelpInput(event.target.value)} placeholder="Or type: I didn't understand" aria-label="Ask for mission help" />
+        <button className="text-btn" type="submit" disabled={!missionHelpInput.trim() || missionHelpLoading}>Ask</button>
+      </form>
     </div>
 
     <button
@@ -498,7 +718,7 @@ function speak(text) {
 
       <button
         className="situation-card"
-        onClick={() => setPage("mission-retry")}
+        onClick={() => { resetMissionHelp(); setPage("mission-message"); }}
       >
         <span className="situation-title">
           🔄 Not yet, try another phrase
@@ -628,6 +848,8 @@ function speak(text) {
             <p className="practice-tip">A little tip: say the phrase aloud if you feel comfortable. Making mistakes is part of learning.</p>
           </section>
         )}
+
+        
 
         <footer className="main-footer"><span>ನಮಸ್ಕಾರ · Made for everyday connections</span><span>Learn with curiosity. Connect with kindness.</span></footer>
       </main>
